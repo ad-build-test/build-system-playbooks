@@ -141,7 +141,16 @@ S3DF:
           tag: R1.0.0
       history:
         - tag: R1.0.0
-          date: 12-19-2024-16:05:20
+          iocs:
+          - name: sioc-b15-sc01
+            tag: R1.0.0
+          - name: sioc-b34-sc01
+            tag: R1.0.0
+          - name: sioc-b34-sc02
+            tag: R1.0.0
+          - name: sioc-b34-sc04
+            tag: R1.0.0
+          date: '2024-12-20T16:06:45.808071'
           user: pnispero
     - name: test-ioc
       tag: test-ioc-1.0.1
