@@ -18,6 +18,7 @@
     user: '{{ user }}' # From CLI
     ioc_list: '{{ ioc_list }}' # From CLI
     tarball: '{{ tarball }}' # From CLI - full filepath to build results tarball
+    playbook_path: '{{ playbook_path }}' # From CLI
 
   # Instead of tasks, just call the other 'regular' ioc deployment playbook
   # Removed gathering_facts for other playbooks since already done in this main one
