@@ -27,7 +27,9 @@
 - name: 'IOCs app deployment - {{ facility }}' # This playbook is always called
   ansible.builtin.import_playbook: app_deploy.yml
 
-- name: 'Normal ioc deployment - {{ facility }}' # This playbook is always called
-  ansible.builtin.import_playbook: normal_ioc_deploy.yml
+# Won't need this for now because don't think we will be deploying local results, always
+# build,tested, code reviewed results from artifact storage
+# - name: 'Normal ioc deployment - {{ facility }}' # This playbook is always called
+#   ansible.builtin.import_playbook: normal_ioc_deploy.yml
 
 
