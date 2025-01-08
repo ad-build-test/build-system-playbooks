@@ -10,7 +10,6 @@
 # All hosts are availble to use, but user can run this playbook on specific
 # servers using '-l <facility>''
   vars: 
-    initial: '{{ initial }}' # From CLI
     facility: '{{ facility }}' # From CLI
     user_src_repo: '{{ user_src_repo }}' # From CLI
     component_name: '{{ component_name }}' # From CLI
@@ -24,7 +23,6 @@
   # Removed gathering_facts for other playbooks since already done in this main one
 - name: 'Initial ioc deployment - {{ facility }}' # This playbook is usually only ran once when an ioc is deployed for the first time
   ansible.builtin.import_playbook: initial_ioc_deploy.yml
-  when: initial | bool
 
 - name: 'IOCs app deployment - {{ facility }}' # This playbook is always called
   ansible.builtin.import_playbook: app_deploy.yml
