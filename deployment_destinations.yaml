@@ -32,7 +32,16 @@ LCLS:
           tag: R1.0.0
       history:
         - tag: R1.0.0
-          date: 12-19-2024-16:05:20
+          iocs:
+          - name: sioc-lgun-sc01
+            tag: R1.0.0
+          - name: sioc-sys1-sc01
+            tag: R1.0.0
+          - name: sioc-sys0-sc01
+            tag: R1.0.0
+          - name: sioc-lgun-sc02
+            tag: R1.0.0
+          date: '2024-12-20T16:06:45.808071'
           user: pnispero
     - name: test-ioc
       tag: test-ioc-1.0.1
@@ -77,7 +86,12 @@ FACET:
           tag: R1.0.0
       history:
         - tag: R1.0.0
-          date: 12-19-2024-16:05:20
+          iocs:
+          - name: sioc-li20-sc01
+            tag: R1.0.0
+          - name: sioc-sys1-sc01
+            tag: R1.0.0
+          date: '2024-12-20T16:06:45.808071'
           user: pnispero
     - name: app2
       tag: v2.3.4
@@ -108,7 +122,14 @@ TESTFAC:
           tag: R1.0.0
       history:
         - tag: R1.0.0
-          date: 12-19-2024-16:05:20
+          iocs:
+          - name: sioc-as01-sc01
+            tag: R1.0.0
+          - name: sioc-b128-sc01
+            tag: R1.0.0
+          - name: sioc-sys6-sc01
+            tag: R1.0.0
+          date: '2024-12-20T16:06:45.808071'
           user: pnispero
     - name: app2
       tag: v2.3.4
