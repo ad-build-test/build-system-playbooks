@@ -1,0 +1,8 @@
+#=======================================================
+#  Master Startup Script for {{ ioc }}
+#=======================================================
+setenv("EPICS_IOC_APP","/boot/<facility>/epics/iocCommon/{{ ioc }}/iocSpecificRelease/iocBoot/{{ ioc }}")
+cexpsh("../common/st.cmd.rtems")
+
+# End of script
+

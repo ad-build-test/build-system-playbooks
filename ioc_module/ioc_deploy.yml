@@ -10,14 +10,29 @@
 # All hosts are availble to use, but user can run this playbook on specific
 # servers using '-l <facility>''
   vars: 
-    facility: '{{ facility }}' # From CLI
-    user_src_repo: '{{ user_src_repo }}' # From CLI
-    component_name: '{{ component_name }}' # From CLI
-    tag: '{{ tag }}' # From CLI
-    user: '{{ user }}' # From CLI
-    ioc_list: '{{ ioc_list }}' # From CLI
-    tarball: '{{ tarball }}' # From CLI - full filepath to build results tarball
-    playbook_path: '{{ playbook_path }}' # From CLI
+    facility: '{{ facility }}'
+    user_src_repo: '{{ user_src_repo }}'
+    component_name: '{{ component_name }}'
+    tag: '{{ tag }}'
+    user: '{{ user }}'
+    ioc_list: '{{ ioc_list }}'
+    # Structure:
+    # [
+    #     {
+    #         "architecture": "rhel6-x86_64",
+    #         "binary": "oscilloscope",
+    #         "name": "sioc-b34-sc01",
+    #         "startup_cmd_template": "startup.cmd.soft"
+    #     },
+    #     {
+    #         "architecture": "rhel6-x86_64",
+    #         "binary": "oscilloscope",
+    #         "name": "sioc-b34-sc02",
+    #         "startup_cmd_template": "startup.cmd.soft"
+    #     }
+    # ]
+    tarball: '{{ tarball }}' # full filepath to build results tarball
+    playbook_path: '{{ playbook_path }}'
 
   # Instead of tasks, just call the other 'regular' ioc deployment playbook
   # Removed gathering_facts for other playbooks since already done in this main one

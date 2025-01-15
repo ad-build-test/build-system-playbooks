@@ -1,0 +1,9 @@
+#=======================================================
+#  Master Startup Script for {{ cpu }}
+#=======================================================
+export EPICS_CPU_APP="/afs/slac/g/lcls/epics/iocCommon/{{ cpu }}/iocSpecificRelease/cpuBoot/dev/{{ cpu }}"
+cd "$( dirname ${0} )"
+source ../common/st.cmd.linuxRT.cpu
+
+# End of script
+

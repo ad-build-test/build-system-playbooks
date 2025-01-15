@@ -1,0 +1,8 @@
+#=======================================================
+#  Master Startup Script for {{ ioc }}
+#=======================================================
+epicsEnvSet("EPICS_IOC_APP","${EPICS_IOCS}/{{ ioc }}/iocSpecificRelease/iocBoot/{{ ioc }}")
+< ${EPICS_IOCS}/common/st.cmd.soft
+
+# End of script
+

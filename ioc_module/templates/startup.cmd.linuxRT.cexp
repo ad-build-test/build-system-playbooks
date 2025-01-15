@@ -1,0 +1,9 @@
+#=======================================================
+#  Master Startup Script for {{ ioc }}
+#=======================================================
+setenv("EPICS_IOC_APP","/usr/local/<facility>/epics/iocCommon/{{ ioc }}/iocSpecificRelease/iocBoot/{{ ioc }}")
+cd "$( dirname ${0} )"
+cexpsh("../common/st.cmd.linuxRT.cexp")
+
+# End of script
+

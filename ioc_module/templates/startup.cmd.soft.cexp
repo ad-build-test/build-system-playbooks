@@ -1,0 +1,8 @@
+#!iocSpecificRelease/bin/{{ t_a }}/{{ exe }}
+#=======================================================
+#  Master Startup Script for {{ ioc }}
+#=======================================================
+epicsEnvSet("EPICS_IOC_APP","<path>/epics/iocCommon/{{ ioc }}/iocSpecificRelease/iocBoot/{{ ioc }}")
+cexpsh("<path>/epics/iocCommon/common/st.cmd.soft.cexp")
+
+# End of script

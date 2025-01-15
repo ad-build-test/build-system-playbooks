@@ -16,7 +16,7 @@
       - 'yaml'
   gather_facts: no
   tasks:
-  - name: 'Create component directory at {{ ioc_release_folder }}/{{ component_name }}'
+  - name: 'Create component directory at $APP {{ ioc_release_folder }}/{{ component_name }}'
     ansible.builtin.file:
       path: '{{ ioc_release_folder }}/{{ component_name }}'
       state: directory
@@ -24,60 +24,55 @@
 
   - name: 'Create ioc directory at $IOC {{ ioc_link_folder }}/<ioc>'
     ansible.builtin.file:
-      path: '{{ ioc_link_folder }}/{{ item }}'
+      path: '{{ ioc_link_folder }}/{{ item.name }}'
       state: directory
       mode: '775' # drwxrwxr-x
     loop: "{{ ioc_list }}"
     loop_control:
-      label: '{{ ioc_link_folder }} - {{ item }}'
+      label: '{{ ioc_link_folder }} - {{ item.name }}'
 
-  - name: 'Create sym link {{ ioc_link_folder }}/<ioc>/iocSpecificRelease to point to {{ ioc_release_folder }}/{{ component_name }}/<tag>'
+  - name: 'Create sym link at $IOC {{ ioc_link_folder }}/<ioc>/iocSpecificRelease to point to {{ ioc_release_folder }}/{{ component_name }}/<tag>'
     ansible.builtin.file:
       src: '{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}'
-      dest: '{{ ioc_link_folder }}/{{ item }}/iocSpecificRelease'
+      dest: '{{ ioc_link_folder }}/{{ item.name }}/iocSpecificRelease'
       state: link
       force: true # Force creation even if src dir doesn't exist since it won't if this is initial deployment
     loop: "{{ ioc_list }}"
     loop_control:
-      label: '{{ ioc_link_folder }}/{{ item }}/iocSpecificRelease -> {{ ioc_release_folder }}/{{ component_name }}/{{ tag }}'
+      label: '{{ ioc_link_folder }}/{{ item.name }}/iocSpecificRelease -> {{ ioc_release_folder }}/{{ component_name }}/{{ tag }}'
 
     # 1) In $IOC_DATA, make directory for ioc if doesn't already exist
-  - name: 'Create ioc directory in {{ ioc_data_folder }}/<ioc>'
+  - name: 'Create ioc directory at $IOC_DATA {{ ioc_data_folder }}/<ioc>'
     ansible.builtin.file:
-      path: '{{ ioc_data_folder }}/{{ item }}'
+      path: '{{ ioc_data_folder }}/{{ item.name }}'
       state: directory
       mode: '775' # drwxrwxr-x
     loop: "{{ ioc_list }}"
     loop_control:
-      label: '{{ ioc_data_folder }} - {{ item }}'
+      label: '{{ ioc_data_folder }} - {{ item.name }}'
 
-  - name: Create multiple data directories in {{ ioc_data_folder }}/<ioc>
+  - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc>
     ansible.builtin.file:
-      path: "{{ ioc_data_folder }}/{{ item.0 }}/{{ item.1 }}"
+      path: "{{ ioc_data_folder }}/{{ item.0.name }}/{{ item.1 }}"
       state: directory
       mode: '775'
     loop: "{{ (ioc_list | list) | product(data_directories) | list }}"
     loop_control:
-      label: "{{ ioc_data_folder }}/{{ item.0 }} - {{ item.1 }}"
+      label: "{{ ioc_data_folder }}/{{ item.0.name }} - {{ item.1 }}"
 
   # TODO:
+  # patrick left off here, you fixed the previous tasks and they work like normal
+  # now create the startup.cmd with
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_templating.html
+
   - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
-    block:
-    - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
-      ansible.builtin.fail:
-        msg: == ADBS == UNFINSHED. Please do this step manually.
-      loop: "{{ ioc_list }}"
-      loop_control:
-        label: '== ADBS == {{ item }}'
-    rescue:
-    - name: == ADBS == Continue despite previous error
-      ansible.builtin.debug:
-        msg: Startup.cmd automation is unfinished, please create the startup.cmd manually.
-
-  # TODO: this task (although may not be worth doing if theres too much variation)
-  # - name: Create startup.cmd (dev) st.cmd (prod)
-
-  # - name: Start ioc and shell into it
-  #   ansible.builtin.shell: xterm -hold -e "siocRestart '{{ ioc_name }}' && iocConsole '{{ ioc_name }}'"
-
-
+    template:
+      src: "./templates/{{ item.startup_cmd_template }}"  # Path to your template in the 'templates' directory
+      dest: "{{ ioc_link_folder }}/{{ item.name }}/startup.cmd"  # Destination path where the final file will be saved
+      mode: '0644'  # You can set the appropriate file permissions
+    loop: "{{ ioc_list }}"
+    vars:
+      exe: "{{ item.binary }}"  # Pass the 'binary' value from the IOC dictionary as the 'exe' variable to the template
+      t_a: "{{ item.architecture }}"  # Pass the 'architecture' value from the IOC dictionary to the template
+      ioc: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'ioc'
+      cpu: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'cpu'
