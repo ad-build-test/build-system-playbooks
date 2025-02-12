@@ -1,9 +1,8 @@
 # How to Run 
-# If deploying to multiple facilities, run this playbook multiple times, one for each facility
-# ansible-playbook --extra-vars "user=$USER ioc_name=sioc-123-123 executable_path=/afs/slac.stanford.edu/u/cd/pnispero/mps/central_node_ioc/" ./initial_ioc_deploy.yml
-# This is for dev, and doesn't include using 'cram' and deploying a component to a 
-# deployment location ($APP or $PHYSICS_TOP or $TOOLS/script or $PYDYM etc.)
+# ansible-playbook deployment.yml
 # Process in detail: https://confluence.slac.stanford.edu/display/LCLSControls/CD+-+Deployment+Stage
+
+# Deploys all components needed for build system at production k8s cluster 'ad-build'
 
 # https://docs.ansible.com/ansible/latest/collections/kubernetes/core/k8s_module.html#ansible-collections-kubernetes-core-k8s-module
 - name: Build System Deployment
@@ -14,6 +13,7 @@
 # TODO:
 # 0) ansible-galaxy collection install kubernetes.core
 # 0) Authenticate to the cluster - it automatically gets the credentials/config of localhost machine
+
 # 1) Create namespace
   - name: Create a core-build-system namespace
     kubernetes.core.k8s:
@@ -21,8 +21,7 @@
       api_version: v1
       kind: Namespace
       state: present
-# 2) core-build-system
-  # 2.1) create a temporary directory, git clone all pieces needed (mongodb, core-build-system-deployment, BuildSystem)
+# 2) create a temporary directory, git clone all pieces needed (mongodb, core-build-system-deployment, BuildSystem)
   - name: Create temporary directory for deployment
     ansible.builtin.tempfile:
       state: directory
@@ -43,17 +42,21 @@
       repo: 'https://github.com/ad-build-test/BuildSystem.git'
       dest: '{{ temp_directory.path }}/BuildSystem'
       version: main
-  # 2.2) apply server side mongodb resources
+# 3) core-build-system
+  # 3.1) apply server side mongodb resources
   - name: Apply server side mongodb resources
     kubernetes.core.k8s:
       namespace: '{{ k8s_namespace }}'
       state: present
-      src: '{{ temp_directory.path }}/eed-accel-webapp-clusters-wide-setup/test/mongodb-operator/crd-1.16.2.yaml'
+      src: '{{ temp_directory.path }}/eed-accel-webapp-clusters-wide-setup/prod/mongodb-operator/1.16.2/crd-1.16.2.yaml'
       apply: yes 
-  # 2.3) apply core-build-system-deployment
+      server_side_apply: 
+        field_manager: ansible
+        force_conflicts: true
+  # 3.2) apply core-build-system-deployment
   - name: Find all core-build-system-deployment YAML files
     ansible.builtin.find:
-      paths: "{{ temp_directory.path }}/core-build-system-deployment/test/"
+      paths: "{{ temp_directory.path }}/core-build-system-deployment/ad-build/"
       patterns: "*.yaml,*.yml"
       excludes: "kustomization.yaml"
     register: yaml_files
@@ -62,22 +65,23 @@
       namespace: '{{ k8s_namespace }}'
       state: present
       src: "{{ item.path }}"
+      apply: yes 
     loop: "{{ yaml_files.files }}"
-# 3) BuildSystem
-  # 3.1) apply artifact api service
-  - name: Find all artifact storage api YAML files
+# 4) BuildSystem
+  # 4.1) apply deployment controller
+  - name: Find all deployment controller api YAML files
     ansible.builtin.find:
-      paths: "{{ temp_directory.path }}/BuildSystem/artifact_storage/api/artifact_deployment/"
+      paths: "{{ temp_directory.path }}/BuildSystem/deploy_controller/controller_deployment/"
       patterns: "*.yaml,*.yml"
-      excludes: "kustomization*"
+      excludes: "kustomization*, *_dev.yaml"
     register: yaml_files
-  - name: Apply artifact storage api service
+  - name: Apply deploymment controller api service
     kubernetes.core.k8s:
       namespace: '{{ k8s_namespace }}'
       state: present
       src: "{{ item.path }}"
+      apply: yes 
     loop: "{{ yaml_files.files }}"
-  # 3.2) apply deployment controller (TBD)
 
 # 4) Inspect the cluster make sure everything looks good
   # 4.1) Run sample curl request to backend to see if its working
