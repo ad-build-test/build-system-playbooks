@@ -21,15 +21,22 @@
       src: '{{ item }}'
       dest: '{{ build_results }}/{{ component }}-{{ branch }}'
       mode: push
-    loop:
+      rsync_opts: # Rsync option to ignore missing directories
+        - "--ignore-missing-args"
+    loop: # This list should contain every possible folder an ioc may have as part of whats necessary to run
       - '{{ user_src_repo }}/bin'
       - '{{ user_src_repo }}/db'
       - '{{ user_src_repo }}/dbd'
       - '{{ user_src_repo }}/iocBoot'
+      - '{{ user_src_repo }}/cpuBoot'
+      - '{{ user_src_repo }}/conf'
+      - '{{ user_src_repo }}/archive'
+      - '{{ user_src_repo }}/restore'
+      - '{{ user_src_repo }}/cfg'
+      - '{{ user_src_repo }}/firmware'
       - '{{ user_src_repo }}/build.log'
     ignore_errors: yes # In place in case build.log is missing for local builds
     # no '/' on directories, otherwise it won't copy the directory itself just the contents
 
   - name: Package app with tarball
     ansible.builtin.shell: tar czf {{ build_results }}/{{ component }}-{{ branch }}.tar.gz -C {{ build_results}} {{ component }}-{{ branch }}
-
