@@ -60,13 +60,10 @@
     loop_control:
       label: "{{ ioc_data_folder }}/{{ item.0.name }} - {{ item.1 }}"
 
-  # TODO:
-  # patrick left off here, you fixed the previous tasks and they work like normal
-  # now create the startup.cmd with
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_templating.html
 
   - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
-    template:
+    ansible.builtin.template:
       src: "./templates/{{ item.startup_cmd_template }}"  # Path to your template in the 'templates' directory
       dest: "{{ ioc_link_folder }}/{{ item.name }}/startup.cmd"  # Destination path where the final file will be saved
       mode: '0644'  # You can set the appropriate file permissions
