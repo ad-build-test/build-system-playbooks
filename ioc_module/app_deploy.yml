@@ -29,6 +29,7 @@
     ansible.builtin.stat:
       path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
     register: processed_marker
+    when: tarball_stat.stat.exists
 
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
