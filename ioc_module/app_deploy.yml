@@ -22,7 +22,7 @@
 
   - name: Check if this specific tarball was already processed
     ansible.builtin.stat:
-      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.md5 }}"
     register: processed_marker
 
   - block:
@@ -38,7 +38,7 @@
 
       - name: Create processed marker file
         ansible.builtin.file:
-          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.md5 }}"
           state: touch
           mode: '0644'
     when: not processed_marker.stat.exists
