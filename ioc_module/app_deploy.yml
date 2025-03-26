@@ -17,6 +17,7 @@
   - name: Get tarball checksum (before extraction)
     ansible.builtin.stat:
       path: "{{ tarball }}"
+      get_checksum: true
     register: tarball_stat
 
   # Temp
