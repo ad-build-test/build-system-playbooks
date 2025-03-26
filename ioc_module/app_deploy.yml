@@ -17,12 +17,11 @@
   - name: Get tarball checksum (before extraction)
     ansible.builtin.stat:
       path: "{{ tarball }}"
-      checksum_algorithm: md5
     register: tarball_stat
 
   - name: Check if this specific tarball was already processed
     ansible.builtin.stat:
-      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.md5 }}"
+      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
     register: processed_marker
 
   - block:
@@ -38,11 +37,10 @@
 
       - name: Create processed marker file
         ansible.builtin.file:
-          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.md5 }}"
+          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
           state: touch
           mode: '0644'
     when: not processed_marker.stat.exists
 
   # MASTER - i think its safe to assume you want all IOCs in a different facility
   # to update their envPaths to match, regardless if thats the one you deployed
-
