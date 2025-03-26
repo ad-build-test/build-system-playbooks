@@ -19,6 +19,11 @@
       path: "{{ tarball }}"
     register: tarball_stat
 
+  # Temp
+  - name: Debug stat output
+    ansible.builtin.debug:
+      var: tarball_stat
+
   - name: Check if this specific tarball was already processed
     ansible.builtin.stat:
       path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
