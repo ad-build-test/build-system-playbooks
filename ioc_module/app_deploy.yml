@@ -4,32 +4,45 @@
   # All vars from ioc_deploy.yml are accessible
   gather_facts: no
   tasks:
-  # TODO: The ansible.builtin.unarchive is idempotent, so should work for config management
+  # The ansible.builtin.unarchive is idempotent, so should work for config management
   # EXCEPT, I alter the envPaths files after extraction, so if you ran this playbook again 
   # with the same arguments, itll say 'changed' instead of 'ok'. Because the extracted
   # contents are no longer the same. How do I work around this? Should I recreate the 
   # tarball in the python backend with envPaths already changed?
 
-  # Solution:  I think we should just do a copy instead, so unarchive it in python backend
-  # then make envPaths change, then copy it over
-# Patrick - push your current changes, then build deployment_controller img, then test out 
-# deployment demo functinoality, Then come back to here.
-  - name: Extract build results to '{{ ioc_release_folder }}/{{ component_name }}'
-    ansible.builtin.unarchive:
-      src: '{{ tarball }}'
-      dest: '{{ ioc_release_folder }}/{{ component_name }}'
+  # Solution: Do a checksum on the tarball before extraction, write the checksum on the 
+  # extracted tarball, then the next time you run this, check the checksum on tarball before extraction
+  # to see if it exists on the extracted tarball, if so then "ok" no changes needed.
+# ========================
+  - name: Get tarball checksum (before extraction)
+    ansible.builtin.stat:
+      path: "{{ tarball }}"
+      checksum_algorithm: md5
+    register: tarball_stat
 
-  - name: Update envPaths (call cram script for this) '{{ facility }}'
-    ansible.builtin.shell: python3 {{ playbook_path }}/library/env_paths_update.py {{ component_name }} SIOC {{ ioc_release_folder }} MASTER {{ tag }}
+  - name: Check if this specific tarball was already processed
+    ansible.builtin.stat:
+      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+    register: processed_marker
+
+  - block:
+  # This extraction only occurs if extracted tarball doesn't already exist,
+  # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
+      - name: Extract build results to '{{ ioc_release_folder }}/{{ component_name }}'
+        ansible.builtin.unarchive:
+          src: '{{ tarball }}'
+          dest: '{{ ioc_release_folder }}/{{ component_name }}'
+
+      - name: Update envPaths (call script for this) '{{ facility }}'
+        ansible.builtin.shell: python3 {{ playbook_path }}/library/env_paths_update.py {{ component_name }} SIOC {{ ioc_release_folder }} MASTER {{ tag }}
+
+      - name: Create processed marker file
+        ansible.builtin.file:
+          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+          state: touch
+          mode: '0644'
+    when: not processed_marker.stat.exists
+
   # MASTER - i think its safe to assume you want all IOCs in a different facility
   # to update their envPaths to match, regardless if thats the one you deployed
-  
-  # If have time, make it ansible module for idempotency
-  # - name: Update envPaths (call cram script for this) '{{ facility }}'
-  #   # ansible.builtin.shell: python3 env_paths_update.py {{ app }}
-  #   env_paths_update:
-  #     deploy_type: 'IOC' 
-  #   register: testout
-  # - name: Dump envPaths update output
-  #   debug:
-  #     msg: '{{ testout }}'
+
