@@ -15,11 +15,17 @@
   # to see if it exists on the extracted tarball, if so then "ok" no changes needed.
 # ========================
   - name: Get tarball checksum (before extraction)
-    ansible.builtin.stat:
+    local_action:
+      module: ansible.builtin.stat
       path: "{{ tarball }}"
-      get_checksum: true
     register: tarball_stat
 
+  # - name: Get tarball checksum (before extraction)
+  #   ansible.builtin.stat:
+  #     path: "{{ tarball }}"
+  #     get_checksum: true
+  #   register: tarball_stat
+# issue is that {{ tarball }} point to container /app/R1.3.0.tar.gz, but we already are ssh into dev-srv09
   # Temp
   - name: Debug stat output
     ansible.builtin.debug:
@@ -29,7 +35,6 @@
     ansible.builtin.stat:
       path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
     register: processed_marker
-    when: tarball_stat.stat.exists
 
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
