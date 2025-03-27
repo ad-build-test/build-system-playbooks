@@ -15,13 +15,14 @@
   # to see if it exists on the extracted tarball, if so then "ok" no changes needed.
 # ========================
   - name: Get tarball checksum (before extraction)
-    ansible.builtin.stat:
+    local_action:
+      module: ansible.builtin.stat
       path: "{{ tarball }}"
     register: tarball_stat
 
-  - name: Check if this specific tarball was already processed
+  - name: Check if this specific tarball was already deployed
     ansible.builtin.stat:
-      path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+      path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
     register: processed_marker
 
   - block:
@@ -37,7 +38,7 @@
 
       - name: Create processed marker file
         ansible.builtin.file:
-          path: "{{ ioc_release_folder }}/{{ component_name }}/.processed_{{ tarball_stat.stat.checksum }}"
+          path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
           state: touch
           mode: '0644'
     when: not processed_marker.stat.exists
