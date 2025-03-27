@@ -20,18 +20,7 @@
       path: "{{ tarball }}"
     register: tarball_stat
 
-  # - name: Get tarball checksum (before extraction)
-  #   ansible.builtin.stat:
-  #     path: "{{ tarball }}"
-  #     get_checksum: true
-  #   register: tarball_stat
-# issue is that {{ tarball }} point to container /app/R1.3.0.tar.gz, but we already are ssh into dev-srv09
-  # Temp
-  - name: Debug stat output
-    ansible.builtin.debug:
-      var: tarball_stat
-
-  - name: Check if this specific tarball was already processed
+  - name: Check if this specific tarball was already deployed
     ansible.builtin.stat:
       path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
     register: processed_marker
