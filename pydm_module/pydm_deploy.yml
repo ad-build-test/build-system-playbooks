@@ -1,0 +1,59 @@
+# How to Run 
+# ansible-playbook -i local_inventory --extra-vars "initial=true user=$USER iocCommon=$IOC iocData=$IOC_DATA ioc_name=sioc-123-123 executable_path=/afs/slac.stanford.edu/u/cd/pnispero/mps/central_node_ioc/" ./ioc_deploy.yml
+# This is for dev, and doesn't include using 'cram' and deploying a component to a 
+# deployment location ($APP or $PHYSICS_TOP or $TOOLS/script or $PYDYM etc.)
+# Process in detail: https://confluence.slac.stanford.edu/display/LCLSControls/CD+-+Deployment+Stage
+# This is a 'master playbook' that would call other ioc playbooks based off
+# what is needed, mainly initial / normal deployment
+
+- hosts: all
+# All hosts are availble to use, but user can run this playbook on specific
+# servers using '-l <facility>''
+  vars: 
+    facility: '{{ facility }}'
+    component_name: '{{ component_name }}'
+    tag: '{{ tag }}'
+    user: '{{ user }}'
+    tarball: '{{ tarball }}' # full filepath to build results tarball
+    subsystem: '{{ subsystem }}' # Name of subsystem like (mps, ntwk, mgnt, etc) How it shows up at $PYDM
+
+  tasks:
+  - name: Get tarball checksum (before extraction)
+    local_action:
+      module: ansible.builtin.stat
+      path: "{{ tarball }}"
+    register: tarball_stat
+
+  - name: Check if this specific tarball was already deployed
+    ansible.builtin.stat:
+      path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
+    register: processed_marker
+
+  - block:
+  # This extraction only occurs if extracted tarball doesn't already exist,
+  # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
+      - name: Extract build results to '{{ pydm_release_folder }}/{{ component_name }}'
+        ansible.builtin.unarchive:
+          src: '{{ tarball }}'
+          dest: '{{ pydm_release_folder }}/{{ component_name }}'
+
+      - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ tag }}'
+        ansible.builtin.file:
+          src: '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}'
+          dest: '{{ pydm_release_folder }}/{{ tag }}'
+
+      - name: Create processed marker file
+        ansible.builtin.file:
+          path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
+          state: touch
+          mode: '0644'
+    when: not processed_marker.stat.exists
+
+  - name: 'Create sym link at $PYDM {{ pydm_link_folder }}/{{ subsystem }} to point to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
+    ansible.builtin.file:
+      src: '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
+      dest: '{{ pydm_link_folder }}/{{ subsystem }}'
+      state: link
+      force: true # Force creation even if src dir doesn't exist since it won't if this is initial deployment
+
+
