@@ -47,6 +47,7 @@
         ansible.builtin.file:
           src: '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}'
           dest: '{{ pydm_release_folder }}/{{ tag }}'
+          state: directory
 
       - name: Create processed marker file
         ansible.builtin.file:
