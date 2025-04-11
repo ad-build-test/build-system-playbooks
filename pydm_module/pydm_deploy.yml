@@ -32,6 +32,12 @@
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
   # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
+      - name: 'Create component directory at {{ pydm_release_folder }}/{{ component_name }}'
+        ansible.builtin.file:
+          path: '{{ pydm_release_folder }}/{{ component_name }}'
+          state: directory
+          mode: '775' # drwxrwxr-x
+
       - name: Extract build results to '{{ pydm_release_folder }}/{{ component_name }}'
         ansible.builtin.unarchive:
           src: '{{ tarball }}'
