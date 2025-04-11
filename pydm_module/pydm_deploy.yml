@@ -43,9 +43,12 @@
           src: '{{ tarball }}'
           dest: '{{ pydm_release_folder }}/{{ component_name }}'
 
-      - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ tag }}'
+      - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
         ansible.builtin.command:
-          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ tag }}'"
+          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
+          creates: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}"
+          removes: "{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}"
+      # Default name of tarball is <component>-<tag>, but want to rename it to just <tag>
 
       - name: Create processed marker file
         ansible.builtin.file:
