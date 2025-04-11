@@ -44,10 +44,10 @@
           dest: '{{ pydm_release_folder }}/{{ component_name }}'
 
       - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ tag }}'
-        ansible.builtin.file:
-          src: '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}'
-          dest: '{{ pydm_release_folder }}/{{ tag }}'
-          state: directory
+        ansible.builtin.command:
+          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ tag }}'"
+          creates: "{{ pydm_release_folder }}/{{ tag }}"
+          removes: "{{ pydm_release_folder }}/{{ component_name }}-{{ tag }}"
 
       - name: Create processed marker file
         ansible.builtin.file:
