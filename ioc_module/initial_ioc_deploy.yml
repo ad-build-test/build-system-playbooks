@@ -73,3 +73,4 @@
       t_a: "{{ item.architecture }}"  # Pass the 'architecture' value from the IOC dictionary to the template
       ioc: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'ioc'
       cpu: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'cpu'
+    ignore_errors: "{{ ansible_check_mode }}"

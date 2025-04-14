@@ -42,12 +42,14 @@
         ansible.builtin.unarchive:
           src: '{{ tarball }}'
           dest: '{{ pydm_release_folder }}/{{ component_name }}'
+        ignore_errors: "{{ ansible_check_mode }}"
 
       - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
         ansible.builtin.command:
           cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
           creates: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}"
           removes: "{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}"
+        ignore_errors: "{{ ansible_check_mode }}"
       # Default name of tarball is <component>-<tag>, but want to rename it to just <tag>
 
       - name: Create processed marker file
@@ -63,5 +65,5 @@
       dest: '{{ pydm_link_folder }}/{{ subsystem }}'
       state: link
       force: true # Force creation even if src dir doesn't exist since it won't if this is initial deployment
-
+    ignore_errors: "{{ ansible_check_mode }}"
 

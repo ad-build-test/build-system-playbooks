@@ -32,6 +32,7 @@
         ansible.builtin.unarchive:
           src: '{{ tarball }}'
           dest: '{{ ioc_release_folder }}/{{ component_name }}'
+        ignore_errors: "{{ ansible_check_mode }}"
 
       - name: Update envPaths (call script for this) '{{ facility }}'
         ansible.builtin.shell: python3 {{ playbook_path }}/library/env_paths_update.py {{ component_name }} SIOC {{ ioc_release_folder }} MASTER {{ tag }}
@@ -41,6 +42,7 @@
           path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
           state: touch
           mode: '0644'
+        ignore_errors: "{{ ansible_check_mode }}"
     when: not processed_marker.stat.exists
 
   # MASTER - i think its safe to assume you want all IOCs in a different facility
