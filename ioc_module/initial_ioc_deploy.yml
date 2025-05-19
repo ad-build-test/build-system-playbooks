@@ -99,26 +99,14 @@
 
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_templating.html
 
-  - name: 'Check if startup.cmd exists for the IOC at {{ ioc_link_folder }}/<ioc>'
-    ansible.builtin.stat:
-      path: "{{ ioc_link_folder }}/{{ item.name }}/startup.cmd"
-    loop: "{{ ioc_list }}"
-    loop_control:
-      label: '{{ ioc_link_folder }} - {{ item.name }}/startup.cmd'
-    register: file_stats
-
   - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
     ansible.builtin.template:
-      src: "./templates/{{ file_check.item.startup_cmd_template }}" # Path to your template in the 'templates' directory
-      dest: "{{ ioc_link_folder }}/{{ file_check.item.name }}/startup.cmd"
-      mode: '775'
-    loop: "{{ file_stats.results }}"
-    loop_control:
-      label: '{{ ioc_link_folder }} - {{ file_check.item.name }}/startup.cmd'
-      loop_var: file_check
-    when: not file_check.stat.exists
+      src: "./templates/{{ item.startup_cmd_template }}"  # Path to your template in the 'templates' directory
+      dest: "{{ ioc_link_folder }}/{{ item.name }}/startup.cmd"  # Destination path where the final file will be saved
+      mode: '0644'  # You can set the appropriate file permissions
+    loop: "{{ ioc_list }}"
     vars:
-      exe: "{{ file_check.item.binary }}" # Pass the 'binary' value from the IOC dictionary as the 'exe' variable to the template
-      t_a: "{{ file_check.item.architecture }}" # Pass the 'architecture' value from the IOC dictionary to the template
-      ioc: "{{ file_check.item.name }}" # Pass the 'name' value form the IOC dictionary as the 'ioc'
-      cpu: "{{ file_check.item.name }}" # Pass the 'name' value form the IOC dictionary as the 'cpu'
+      exe: "{{ item.binary }}"  # Pass the 'binary' value from the IOC dictionary as the 'exe' variable to the template
+      t_a: "{{ item.architecture }}"  # Pass the 'architecture' value from the IOC dictionary to the template
+      ioc: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'ioc'
+      cpu: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'cpu'
