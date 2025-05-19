@@ -88,7 +88,7 @@
 
   - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc>
     ansible.builtin.file:
-      path: "{{ dir_check.item.0.name }}/{{ dir_check.item.1 }}"
+      path: "{{ ioc_data_folder }}/{{ dir_check.item.0.name }}/{{ dir_check.item.1 }}"
       state: directory
       mode: '775'
     loop: "{{ dir_stats.results }}"
