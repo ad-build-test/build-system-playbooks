@@ -103,7 +103,7 @@
     ansible.builtin.template:
       src: "./templates/{{ item.startup_cmd_template }}"  # Path to your template in the 'templates' directory
       dest: "{{ ioc_link_folder }}/{{ item.name }}/startup.cmd"  # Destination path where the final file will be saved
-      mode: '0755'  # You can set the appropriate file permissions
+      mode: '0775'  # You can set the appropriate file permissions
     loop: "{{ ioc_list }}"
     vars:
       exe: "{{ item.binary }}"  # Pass the 'binary' value from the IOC dictionary as the 'exe' variable to the template
