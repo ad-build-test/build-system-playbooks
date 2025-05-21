@@ -32,11 +32,20 @@
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
   # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
+
+      # Each directory creation will have a task to check first if directory already exists, if not then create it
+      # Added a check first because if already exists and the permissions don't match here, then the task will fail.
+      - name: 'Check if component directory exists at {{ pydm_release_folder }}/{{ component_name }}'
+        ansible.builtin.stat:
+          path: '{{ pydm_release_folder }}/{{ component_name }}'
+        register: dir_stat
+
       - name: 'Create component directory at {{ pydm_release_folder }}/{{ component_name }}'
         ansible.builtin.file:
           path: '{{ pydm_release_folder }}/{{ component_name }}'
           state: directory
           mode: '775' # drwxrwxr-x
+        when: not dir_stat.stat.exists
 
       - name: Extract build results to '{{ pydm_release_folder }}/{{ component_name }}'
         ansible.builtin.unarchive:
