@@ -47,12 +47,12 @@
           mode: '775' # drwxrwxr-x
         when: not dir_stat.stat.exists
 
-      - name: Extract build results to '{{ pydm_release_folder }}/{{ component_name }}'
+      - name: 'Extract build results to {{ pydm_release_folder }}/{{ component_name }}'
         ansible.builtin.unarchive:
           src: '{{ tarball }}'
           dest: '{{ pydm_release_folder }}/{{ component_name }}'
 
-      - name: Rename extracted tarball '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
+      - name: 'Rename extracted tarball {{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
         ansible.builtin.command:
           cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
           creates: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}"
