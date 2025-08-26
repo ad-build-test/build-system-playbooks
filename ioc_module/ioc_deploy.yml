@@ -9,6 +9,10 @@
 - hosts: all
 # All hosts are availble to use, but user can run this playbook on specific
 # servers using '-l <facility>''
+  environment:
+    EPICS_TOP: "{{ epics_top }}"
+    PACKAGE_TOP: "{{ package_top }}"
+    TOOLS: "{{ tools }}"
   vars: 
     facility: '{{ facility }}'
     user_src_repo: '{{ user_src_repo }}'

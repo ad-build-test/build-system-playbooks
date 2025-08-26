@@ -10,20 +10,15 @@
   # contents are no longer the same. How do I work around this? Should I recreate the 
   # tarball in the python backend with envPaths already changed?
 
-  # Solution: Do a checksum on the tarball before extraction, write the checksum on the 
-  # extracted tarball, then the next time you run this, check the checksum on tarball before extraction
-  # to see if it exists on the extracted tarball, if so then "ok" no changes needed.
+  # Solution: Add a file that marks the tag as deployed. No checksum needed, since 
+  # deploying the same tag should always have the same contents, only a different tag would have
+  # different contents
 # ========================
-  - name: Get tarball checksum (before extraction)
-    local_action:
-      module: ansible.builtin.stat
-      path: "{{ tarball }}"
-    register: tarball_stat
 
-  - name: Check if this specific tarball was already deployed
+  - name: Check if this tag was already deployed
     ansible.builtin.stat:
-      path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
-    register: processed_marker
+      path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
+    register: tag_deployed
 
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
@@ -36,12 +31,12 @@
       - name: Update envPaths (call script for this) '{{ facility }}'
         ansible.builtin.shell: python3 {{ playbook_path }}/library/env_paths_update.py {{ component_name }} SIOC {{ ioc_release_folder }} MASTER {{ tag }}
 
-      - name: Create processed marker file
+      - name: Mark tag as deployed
         ansible.builtin.file:
-          path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
+          path: "{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
           state: touch
           mode: '0644'
-    when: not processed_marker.stat.exists
+    when: not tag_deployed.stat.exists
 
   # MASTER - i think its safe to assume you want all IOCs in a different facility
   # to update their envPaths to match, regardless if thats the one you deployed
