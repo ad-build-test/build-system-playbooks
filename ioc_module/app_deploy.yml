@@ -30,6 +30,11 @@
 
       - name: Update envPaths (call script for this) '{{ facility }}'
         ansible.builtin.shell: python3 {{ playbook_path }}/library/env_paths_update.py {{ component_name }} SIOC {{ ioc_release_folder }} MASTER {{ tag }}
+        environment:
+          - EPICS_TOP: "{{ epics_top }}"
+          - EPICS_BASE_TOP: "{{ epics_base_top }}"
+          - PACKAGE_TOP: "{{ package_top }}"
+          - TOOLS: "{{ tools }}"
 
       - name: Mark tag as deployed
         ansible.builtin.file:

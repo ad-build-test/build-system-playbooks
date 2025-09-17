@@ -1,6 +1,11 @@
 # build-system-playbooks
 Repo with the ansible playbooks used for the build system (Software factory)
 
+## Development
+Any new changes please do the following (todo: may make a github action for this):
+1. Update the RELEASE_NOTES.md accordingly
+2. Pull latest changes at the repo on weka at `/sdf/group/ad/eed/ad-build/build-system-playbooks/`
+
 ## ioc_module
 Playbooks for deploying ioc apps
 

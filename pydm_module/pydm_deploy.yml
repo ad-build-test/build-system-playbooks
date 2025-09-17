@@ -46,18 +46,22 @@
           state: directory
           mode: '775' # drwxrwxr-x
         when: not dir_stat.stat.exists
-
+     
       - name: 'Extract build results to {{ pydm_release_folder }}/{{ component_name }}'
         ansible.builtin.unarchive:
           src: '{{ tarball }}'
           dest: '{{ pydm_release_folder }}/{{ component_name }}'
+          list_files: yes
+        register: extraction_result
 
-      - name: 'Rename extracted tarball {{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }} to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
+      - name: Get the top-level directory name
+        set_fact:
+          extracted_dir_name: "{{ extraction_result.files[0].split('/')[0] }}"
+
+      - name: 'Rename extracted directory to {{ tag }}'
         ansible.builtin.command:
-          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
-          creates: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}"
-          removes: "{{ pydm_release_folder }}/{{ component_name }}/{{ component_name }}-{{ tag }}"
-      # Default name of tarball is <component>-<tag>, but want to rename it to just <tag>
+          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ extracted_dir_name }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
+        when: extracted_dir_name != tag
 
       - name: Create processed marker file
         ansible.builtin.file:
