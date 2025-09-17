@@ -11,6 +11,7 @@
 # servers using '-l <facility>''
   environment:
     EPICS_TOP: "{{ epics_top }}"
+    EPICS_BASE_TOP: "{{ epics_base_top }}"
     PACKAGE_TOP: "{{ package_top }}"
     TOOLS: "{{ tools }}"
   vars: 
