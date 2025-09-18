@@ -1,0 +1,12 @@
+- name: Normal IOC Deployment
+  hosts: all
+  # All vars from ioc_deploy.yml are accessible
+  gather_facts: no
+  tasks:
+
+  - name: Reboot IOC using siocRestart
+    ansible.builtin.shell: siocRestart {{ item.name }}
+    loop: "{{ ioc_list }}"
+    loop_control:
+      label: 'siocRestart {{ item.name }}'
+    when: reboot_iocs == true

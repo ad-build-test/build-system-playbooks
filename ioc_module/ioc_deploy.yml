@@ -1,10 +1,7 @@
 # How to Run 
-# ansible-playbook -i local_inventory --extra-vars "initial=true user=$USER iocCommon=$IOC iocData=$IOC_DATA ioc_name=sioc-123-123 executable_path=/afs/slac.stanford.edu/u/cd/pnispero/mps/central_node_ioc/" ./ioc_deploy.yml
-# This is for dev, and doesn't include using 'cram' and deploying a component to a 
-# deployment location ($APP or $PHYSICS_TOP or $TOOLS/script or $PYDYM etc.)
+# This playbook is called by the software factory (build system) deployment controller
 # Process in detail: https://confluence.slac.stanford.edu/display/LCLSControls/CD+-+Deployment+Stage
-# This is a 'master playbook' that would call other ioc playbooks based off
-# what is needed, mainly initial / normal deployment
+# This is a 'master playbook' that would call other ioc playbooks
 
 - hosts: all
 # All hosts are availble to use, but user can run this playbook on specific
@@ -15,13 +12,14 @@
     PACKAGE_TOP: "{{ package_top }}"
     TOOLS: "{{ tools }}"
   vars: 
+    reboot_iocs: '{{ reboot_iocs }}'
     facility: '{{ facility }}'
     user_src_repo: '{{ user_src_repo }}'
     component_name: '{{ component_name }}'
     tag: '{{ tag }}'
     user: '{{ user }}'
     ioc_list: '{{ ioc_list }}'
-    # Structure:
+    # ioc_list Structure:
     # [
     #     {
     #         "architecture": "rhel6-x86_64",
@@ -41,15 +39,13 @@
 
   # Instead of tasks, just call the other 'regular' ioc deployment playbook
   # Removed gathering_facts for other playbooks since already done in this main one
-- name: 'Initial ioc deployment - {{ facility }}' # This playbook is usually only ran once when an ioc is deployed for the first time
+- name: 'Initial ioc deployment - {{ facility }}'
   ansible.builtin.import_playbook: initial_ioc_deploy.yml
 
-- name: 'IOCs app deployment - {{ facility }}' # This playbook is always called
+- name: 'IOCs app deployment - {{ facility }}'
   ansible.builtin.import_playbook: app_deploy.yml
 
-# Won't need this for now because don't think we will be deploying local results, always
-# build,tested, code reviewed results from artifact storage
-# - name: 'Normal ioc deployment - {{ facility }}' # This playbook is always called
-#   ansible.builtin.import_playbook: normal_ioc_deploy.yml
+- name: 'Reboot iocs - {{ facility }}'
+  ansible.builtin.import_playbook: reboot_iocs.yml
 
 

@@ -3,5 +3,8 @@
 Release notes for the AD Build System (Software Factory)
 
 ## Releases:
+* tag:1.0.1 18-Sep-2025 P. Nisperos (pnispero)
+    * Added reboot iocs functionality.
+
 * tag:1.0.0 17-Sep-2025 P. Nisperos (pnispero)
     * Fixed env paths problem. Started RELEASE_NOTES and tagging in this repo.
