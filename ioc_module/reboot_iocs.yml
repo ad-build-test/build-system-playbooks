@@ -15,14 +15,4 @@
     loop_control:
       label: 'siocRestart {{ item.name }}'
     when: reboot_iocs == true
-    register: restart_result
-    ignore_errors: yes
-
-  - name: Fail if any IOC restart failed
-    fail:
-      msg: "IOC restart failed for {{ item.item.name }}: {{ item.stdout | default(item.stderr) }}"
-    loop: "{{ restart_result.results }}"
-    when: 
-      - restart_result.results is defined
-      - item.failed | default(false)
     
