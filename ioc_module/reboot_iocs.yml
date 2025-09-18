@@ -4,8 +4,14 @@
   gather_facts: no
   tasks:
 
+  - name: Find siocRestart command
+    ansible.builtin.shell: which siocRestart
+    register: sioc_restart_path
+    become: yes
+    when: reboot_iocs == true
+
   - name: Reboot IOC using siocRestart
-    ansible.builtin.shell: siocRestart {{ item.name }}
+    ansible.builtin.shell: "{{ sioc_restart_path.stdout }} {{ item.name }}"
     loop: "{{ ioc_list }}"
     loop_control:
       label: 'siocRestart {{ item.name }}'
