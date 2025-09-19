@@ -1,10 +1,5 @@
-# How to Run 
-# ansible-playbook -i local_inventory --extra-vars "initial=true user=$USER iocCommon=$IOC iocData=$IOC_DATA ioc_name=sioc-123-123 executable_path=/afs/slac.stanford.edu/u/cd/pnispero/mps/central_node_ioc/" ./ioc_deploy.yml
-# This is for dev, and doesn't include using 'cram' and deploying a component to a 
 # deployment location ($APP or $PHYSICS_TOP or $TOOLS/script or $PYDYM etc.)
 # Process in detail: https://confluence.slac.stanford.edu/display/LCLSControls/CD+-+Deployment+Stage
-# This is a 'master playbook' that would call other ioc playbooks based off
-# what is needed, mainly initial / normal deployment
 
 - hosts: all
 # All hosts are availble to use, but user can run this playbook on specific
