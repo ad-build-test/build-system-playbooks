@@ -3,7 +3,7 @@
   hosts: localhost
   # All vars from ioc_deploy.yml are accessible
   vars:
-    facility: S3DF
+    facility: SANDBOX
     app_name: test-ioc
     app_type: SIOC
     release_folder: /sdf/group/ad/eed/lcls/epics/iocTop
