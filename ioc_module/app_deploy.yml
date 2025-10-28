@@ -21,8 +21,7 @@
     register: tag_deployed
 
   - block:
-  # This extraction only occurs if extracted tarball doesn't already exist,
-  # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
+  # This extraction only occurs if extracted tarball doesn't already exist
       - name: Extract build results to '{{ ioc_release_folder }}/{{ component_name }}'
         ansible.builtin.unarchive:
           src: '{{ tarball }}'

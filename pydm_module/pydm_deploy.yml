@@ -13,20 +13,13 @@
     subsystem: '{{ subsystem }}' # Name of subsystem like (mps, ntwk, mgnt, etc) How it shows up at $PYDM
 
   tasks:
-  - name: Get tarball checksum (before extraction)
-    local_action:
-      module: ansible.builtin.stat
-      path: "{{ tarball }}"
-    register: tarball_stat
-
-  - name: Check if this specific tarball was already deployed
+  - name: Check if this tag was already deployed
     ansible.builtin.stat:
-      path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
-    register: processed_marker
+      path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
+    register: tag_deployed
 
   - block:
   # This extraction only occurs if extracted tarball doesn't already exist,
-  # If extracted tarball does exist, then only run if the tarball before extraction is different than the tarball you want to extract now.
 
       # Each directory creation will have a task to check first if directory already exists, if not then create it
       # Added a check first because if already exists and the permissions don't match here, then the task will fail.
@@ -58,12 +51,12 @@
           cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ extracted_dir_name }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
         when: extracted_dir_name != tag
 
-      - name: Create processed marker file
+      - name: Mark tag as deployed
         ansible.builtin.file:
-          path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.processed_{{ tarball_stat.stat.checksum }}"
+          path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
           state: touch
           mode: '0644'
-    when: not processed_marker.stat.exists
+    when: not tag_deployed.stat.exists
 
   - name: 'Create sym link at $PYDM {{ pydm_link_folder }}/{{ subsystem }} to point to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
     ansible.builtin.file:
