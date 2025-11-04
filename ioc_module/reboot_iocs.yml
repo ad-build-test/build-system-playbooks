@@ -15,4 +15,19 @@
     loop_control:
       label: 'siocRestart {{ item.name }}'
     when: reboot_iocs == true
+    async: 60
+    poll: 0
+    register: restart_jobs
+
+  - name: Wait for IOC reboots to complete
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    loop: "{{ restart_jobs.results }}"
+    when: 
+      - item.ansible_job_id is defined
+      - not ansible_check_mode
+    register: restart_status
+    until: restart_status.finished
+    retries: 20
+    delay: 3
     
