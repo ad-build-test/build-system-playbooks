@@ -100,7 +100,7 @@
       label: '{{ ioc_data_folder }} - {{ item.name }}'
     register: data_dir_stats
 
-  - name: 'Create ioc directory at $IOC_DATA {{ ioc_data_folder }}/<ioc> (async)'
+  - name: 'Create ioc directory at $IOC_DATA {{ ioc_data_folder }}/<ioc> '
     ansible.builtin.file:
       path: '{{ ioc_data_folder }}/{{ dir_check.item.name }}'
       state: directory
@@ -136,7 +136,7 @@
       label: "{{ ioc_data_folder }}/{{ item.0.name }} - {{ item.1 }}"
     register: subdir_stats
 
-  - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc> (async)
+  - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc> 
     ansible.builtin.file:
       path: "{{ ioc_data_folder }}/{{ dir_check.item.0.name }}/{{ dir_check.item.1 }}"
       state: directory
@@ -163,7 +163,6 @@
     delay: 2
     no_log: true
 
-  # --- Templates (async) ---
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_templating.html
   - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
     ansible.builtin.template:
@@ -176,17 +175,3 @@
       t_a: "{{ item.architecture }}"  # Pass the 'architecture' value from the IOC dictionary to the template
       ioc: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'ioc'
       cpu: "{{ item.name }}" # Pass the 'name' value form the IOC dictionary as the 'cpu'
-    async: "{{ 0 if ansible_check_mode else 60 }}"  # disable async in check mode
-    poll: 0
-    register: template_jobs
-
-  - name: 'Wait for templates to complete'
-    async_status:
-      jid: "{{ item.ansible_job_id }}"
-    loop: "{{ template_jobs.results }}"
-    when: not ansible_check_mode
-    register: template_status
-    until: template_status.finished
-    retries: 20
-    delay: 2
-    no_log: true
