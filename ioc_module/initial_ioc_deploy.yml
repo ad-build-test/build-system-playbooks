@@ -27,7 +27,7 @@
     ansible.builtin.file:
       path: '{{ ioc_release_folder }}/{{ component_name }}'
       state: directory
-      mode: '775' # drwxrwxr-x
+      mode: '775'
     when: not dir_stat.stat.exists
 
   - name: 'Check if ioc directories exist at $IOC {{ ioc_link_folder }}/<ioc>'
@@ -38,17 +38,35 @@
       label: '{{ ioc_link_folder }} - {{ item.name }}'
     register: dir_stats
 
+  # --- IOC link directories (async) ---
   - name: 'Create ioc directory at $IOC {{ ioc_link_folder }}/<ioc>'
     ansible.builtin.file:
       path: '{{ ioc_link_folder }}/{{ dir_check.item.name }}'
       state: directory
-      mode: '775' # drwxrwxr-x
+      mode: '775'
     loop: "{{ dir_stats.results }}"
     loop_control:
       label: '{{ ioc_link_folder }} - {{ dir_check.item.name }}'
       loop_var: dir_check
     when: not dir_check.stat.exists
+    async: "{{ 0 if ansible_check_mode else 60 }}"  # disable async in check mode
+    poll: 0
+    register: ioc_dir_jobs
 
+  - name: 'Wait for IOC directories to be created'
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    loop: "{{ ioc_dir_jobs.results }}"
+    when: 
+      - item.ansible_job_id is defined
+      - not ansible_check_mode
+    register: ioc_dir_status
+    until: ioc_dir_status.finished
+    retries: 20
+    delay: 2
+    no_log: true
+
+  # --- Symlinks (async) ---
   - name: 'Create sym link at $IOC {{ ioc_link_folder }}/<ioc>/iocSpecificRelease to point to {{ ioc_release_folder }}/{{ component_name }}/<tag>'
     ansible.builtin.file:
       src: '{{ ioc_release_folder }}/{{ component_name }}/{{ tag }}'
@@ -58,47 +76,94 @@
     loop: "{{ ioc_list }}"
     loop_control:
       label: '{{ ioc_link_folder }}/{{ item.name }}/iocSpecificRelease -> {{ ioc_release_folder }}/{{ component_name }}/{{ tag }}'
+    async: "{{ 0 if ansible_check_mode else 60 }}"  # disable async in check mode
+    poll: 0
+    register: symlink_jobs
 
+  - name: 'Wait for symlinks to complete'
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    loop: "{{ symlink_jobs.results }}"
+    when: not ansible_check_mode
+    register: symlink_status
+    until: symlink_status.finished
+    retries: 20
+    delay: 2
+    no_log: true
+
+  # --- IOC data directories (async) ---
   - name: 'Check if ioc directories exist at $IOC_DATA {{ ioc_data_folder }}/<ioc>'
     ansible.builtin.stat:
       path: '{{ ioc_data_folder }}/{{ item.name }}'
     loop: "{{ ioc_list }}"
     loop_control:
       label: '{{ ioc_data_folder }} - {{ item.name }}'
-    register: dir_stats
+    register: data_dir_stats
 
-  - name: 'Create ioc directory at $IOC_DATA {{ ioc_data_folder }}/<ioc>'
+  - name: 'Create ioc directory at $IOC_DATA {{ ioc_data_folder }}/<ioc> '
     ansible.builtin.file:
       path: '{{ ioc_data_folder }}/{{ dir_check.item.name }}'
       state: directory
-      mode: '775' # drwxrwxr-x
-    loop: "{{ dir_stats.results }}"
+      mode: '775'
+    loop: "{{ data_dir_stats.results }}"
     loop_control:
       label: '{{ ioc_data_folder }} - {{ dir_check.item.name }}'
       loop_var: dir_check
     when: not dir_check.stat.exists
+    async: "{{ 0 if ansible_check_mode else 60 }}"  # disable async in check mode
+    poll: 0
+    register: data_dir_jobs
 
+  - name: 'Wait for IOC data directories to be created'
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    loop: "{{ data_dir_jobs.results }}"
+    when: 
+      - item.ansible_job_id is defined
+      - not ansible_check_mode
+    register: data_dir_status
+    until: data_dir_status.finished
+    retries: 20
+    delay: 2
+    no_log: true
+
+  # --- Data subdirectories (async) ---
   - name: Check if data directories exist at $IOC_DATA {{ ioc_data_folder }}/<ioc>
     ansible.builtin.stat:
       path: "{{ ioc_data_folder }}/{{ item.0.name }}/{{ item.1 }}"
     loop: "{{ (ioc_list | list) | product(data_directories) | list }}"
     loop_control:
       label: "{{ ioc_data_folder }}/{{ item.0.name }} - {{ item.1 }}"
-    register: dir_stats
+    register: subdir_stats
 
-  - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc>
+  - name: Create multiple data directories at $IOC_DATA {{ ioc_data_folder }}/<ioc> 
     ansible.builtin.file:
       path: "{{ ioc_data_folder }}/{{ dir_check.item.0.name }}/{{ dir_check.item.1 }}"
       state: directory
       mode: '775'
-    loop: "{{ dir_stats.results }}"
+    loop: "{{ subdir_stats.results }}"
     loop_control:
       label: "{{ ioc_data_folder }}/{{ dir_check.item.0.name }} - {{ dir_check.item.1 }}"
       loop_var: dir_check
     when: not dir_check.stat.exists
+    async: "{{ 0 if ansible_check_mode else 60 }}"  # disable async in check mode
+    poll: 0
+    register: subdir_jobs
+
+  - name: 'Wait for data subdirectories to be created'
+    async_status:
+      jid: "{{ item.ansible_job_id }}"
+    loop: "{{ subdir_jobs.results }}"
+    when: 
+      - item.ansible_job_id is defined
+      - not ansible_check_mode
+    register: subdir_status
+    until: subdir_status.finished
+    retries: 20
+    delay: 2
+    no_log: true
 
 # https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_templating.html
-
   - name: 'Add startup.cmd/st.cmd for the IOC at {{ ioc_link_folder }}/<ioc>'
     ansible.builtin.template:
       src: "./templates/{{ item.startup_cmd_template }}"  # Path to your template in the 'templates' directory
