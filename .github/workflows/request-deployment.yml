@@ -44,31 +44,42 @@ permissions:
   actions: read
 
 jobs:
-  deploy:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      facilities: ${{ steps.build-matrix.outputs.facilities }}
     steps:
-      - name: Build Facility List
-        id: facilities
+      - name: Build Facility Matrix
+        id: build-matrix
         run: |
-          FACILITIES=""
-          [ "${{ inputs.deploy_to_dev }}" == "true" ] && FACILITIES="${FACILITIES}DEV,"
-          [ "${{ inputs.deploy_to_lcls }}" == "true" ] && FACILITIES="${FACILITIES}LCLS,"
-          [ "${{ inputs.deploy_to_facet }}" == "true" ] && FACILITIES="${FACILITIES}FACET,"
-          [ "${{ inputs.deploy_to_testfac }}" == "true" ] && FACILITIES="${FACILITIES}TESTFAC,"
-          [ "${{ inputs.deploy_to_sandbox }}" == "true" ] && FACILITIES="${FACILITIES}SANDBOX,"
+          FACILITIES="["
+          [ "${{ inputs.deploy_to_dev }}" == "true" ] && FACILITIES="${FACILITIES}\"DEV\","
+          [ "${{ inputs.deploy_to_lcls }}" == "true" ] && FACILITIES="${FACILITIES}\"LCLS\","
+          [ "${{ inputs.deploy_to_facet }}" == "true" ] && FACILITIES="${FACILITIES}\"FACET\","
+          [ "${{ inputs.deploy_to_testfac }}" == "true" ] && FACILITIES="${FACILITIES}\"TESTFAC\","
+          [ "${{ inputs.deploy_to_sandbox }}" == "true" ] && FACILITIES="${FACILITIES}\"SANDBOX\","
           
-          # Remove trailing comma
-          FACILITIES=${FACILITIES%,}
+          # Remove trailing comma and close array
+          FACILITIES="${FACILITIES%,}]"
           
-          if [ -z "$FACILITIES" ]; then
+          # Check if empty
+          if [ "$FACILITIES" == "[]" ]; then
             echo "Error: No facilities selected"
             exit 1
           fi
           
           echo "facilities=$FACILITIES" >> $GITHUB_OUTPUT
           echo "Selected facilities: $FACILITIES"
-      
-      - name: Create GitHub Deployment
+
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        facility: ${{ fromJson(needs.prepare.outputs.facilities) }}
+      fail-fast: false  # Continue deploying to other facilities even if one fails
+    steps:
+      - name: Create GitHub Deployment for ${{ matrix.facility }}
         id: deployment
         uses: actions/github-script@v7
         with:
@@ -77,19 +88,19 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: '${{ inputs.tag }}',
-              environment: 'deployment',
+              environment: '${{ matrix.facility }}',
               required_contexts: [],
               auto_merge: false,
               payload: {
-                facility: '${{ steps.facilities.outputs.facilities }}',
+                facility: '${{ matrix.facility }}',
                 tag: '${{ inputs.tag }}',
                 user: '${{ github.actor }}',
                 deploymentType: '${{ inputs.deployment_type }}'
               },
-              description: 'Deploying ${{ inputs.tag }} to ${{ steps.facilities.outputs.facilities }}'
+              description: 'Deploying ${{ inputs.tag }} to ${{ matrix.facility }}'
             });
             
-            console.log('Deployment created with ID:', deployment.data.id);
+            console.log('Deployment created for ${{ matrix.facility }}: ID', deployment.data.id);
             console.log('Payload:', JSON.stringify(deployment.data.payload));
             return deployment.data.id;
       
@@ -97,4 +108,4 @@ jobs:
         run: |
           echo "Deployment ID: ${{ steps.deployment.outputs.result }}"
           echo "Tag: ${{ inputs.tag }}"
-          echo "Facility: ${{ steps.facilities.outputs.facilities }}"
+          echo "Facility: ${{ matrix.facility }}"
