@@ -1,0 +1,58 @@
+- name: Manage container services
+  hosts: all
+  gather_facts: no
+  tasks:
+    # --- Check what tag is currently running ---
+    - name: 'Check current deployed tag'
+      ansible.builtin.slurp:
+        src: '{{ deploy_base }}/{{ app_name }}/.current_tag'
+      register: current_tag_file
+      ignore_errors: true
+
+    - name: 'Set current tag fact'
+      ansible.builtin.set_fact:
+        current_tag: "{{ (current_tag_file.content | b64decode | trim) if current_tag_file is succeeded else '' }}"
+
+    - name: 'Skip deployment if same tag is already running'
+      ansible.builtin.debug:
+        msg: 'Tag {{ image_tag }} is already running, skipping deployment'
+      when: current_tag == image_tag and not (force_deploy | default(false) | bool)
+
+    - block:
+        # --- Database migrations (skipped if migration_command is not defined) ---
+        - name: 'Run database migrations'
+          ansible.builtin.shell: >
+            docker compose -f {{ deploy_base }}/{{ app_name }}/docker-compose.yml
+            run --rm {{ migration_service | default('api') }} {{ migration_command }}
+          args:
+            chdir: '{{ deploy_base }}/{{ app_name }}'
+          register: migration_result
+          changed_when: migration_result.rc == 0
+          when: migration_command is defined and migration_command
+
+        # --- Bring services up ---
+        - name: 'Deploy services with docker compose'
+          ansible.builtin.shell: >
+            docker compose -f {{ deploy_base }}/{{ app_name }}/docker-compose.yml
+            up -d --remove-orphans
+          args:
+            chdir: '{{ deploy_base }}/{{ app_name }}'
+
+        # --- Health check ---
+        - name: 'Wait for API health endpoint'
+          ansible.builtin.uri:
+            url: 'http://localhost:{{ api_port | default(8080) }}{{ health_check_path | default("/health") }}'
+            method: GET
+            status_code: 200
+          register: health_check
+          until: health_check.status == 200
+          retries: 30
+          delay: 5
+
+        # --- Record current tag ---
+        - name: 'Write current tag to {{ deploy_base }}/{{ app_name }}/.current_tag'
+          ansible.builtin.copy:
+            content: '{{ image_tag }}'
+            dest: '{{ deploy_base }}/{{ app_name }}/.current_tag'
+            mode: '0644'
+      when: current_tag != image_tag or (force_deploy | default(false) | bool)

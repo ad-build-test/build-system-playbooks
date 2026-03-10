@@ -1,0 +1,29 @@
+# Container Deployment Playbook - Main Entry Point
+#
+# Deploys a containerized application via Docker Compose to target servers.
+# Uses external database and redis (connection strings passed via --extra-vars).
+#
+# Usage:
+#   ansible-playbook container_module/container_deploy.yml \
+#     -i global_inventory.ini -l CONTAINER_DEV \
+#     --extra-vars '{
+#       "app_name": "react-squirrel-backend",
+#       "image_tag": "main-abc1234",
+#       "database_url": "postgresql://...",
+#       "redis_url": "redis://...",
+#       "ghcr_token": "...",
+#       "ghcr_user": "..."
+#     }'
+
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Set computed variables
+      ansible.builtin.set_fact:
+        ghcr_image: '{{ ghcr_registry }}/{{ app_name }}'
+        redis_url: '{{ redis_url | default("") }}'
+        ghcr_token: '{{ ghcr_token | default("") }}'
+        ghcr_user: '{{ ghcr_user | default("") }}'
+
+- import_playbook: prepare_deployment.yml
+- import_playbook: manage_services.yml
