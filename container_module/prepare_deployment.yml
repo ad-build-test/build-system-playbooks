@@ -1,0 +1,31 @@
+- name: Prepare container deployment
+  hosts: all
+  gather_facts: no
+  tasks:
+    # --- Directory setup ---
+    - name: 'Ensure app directory exists at {{ deploy_base }}/{{ app_name }}'
+      ansible.builtin.file:
+        path: '{{ deploy_base }}/{{ app_name }}'
+        state: directory
+        mode: '0755'
+
+    # --- Render templates to target server ---
+    - name: 'Deploy docker-compose.yml to {{ deploy_base }}/{{ app_name }}'
+      ansible.builtin.template:
+        src: './templates/{{ app_name }}/docker-compose.prod.yml.j2'
+        dest: '{{ deploy_base }}/{{ app_name }}/docker-compose.yml'
+        mode: '0644'
+
+    # --- GHCR login ---
+    - name: 'Login to GHCR'
+      ansible.builtin.shell: >
+        echo "{{ ghcr_token }}" | docker login ghcr.io -u "{{ ghcr_user }}" --password-stdin
+      no_log: true
+      when: ghcr_token | default("") | length > 0
+
+    # --- Pull application image ---
+    - name: 'Pull image {{ ghcr_image }}:{{ image_tag }}'
+      ansible.builtin.shell: >
+        docker pull {{ ghcr_image }}:{{ image_tag }}
+      register: pull_result
+      changed_when: "'Pull complete' in pull_result.stdout or 'Downloaded newer image' in pull_result.stdout"

@@ -28,15 +28,45 @@ on:
         required: false
         type: boolean
         default: false
+      deploy_to_container_dev:
+        description: 'CONTAINER_DEV'
+        required: false
+        type: boolean
+        default: false
+      deploy_to_container_prod:
+        description: 'CONTAINER_PROD'
+        required: false
+        type: boolean
+        default: false
       tag:
         description: 'Tag to deploy'
         required: true
         type: string
       deployment_type:
-        description: 'Deployment type (e.g., pydm, epics-ioc)'
+        description: 'Deployment type (e.g., pydm, epics-ioc, container)'
         required: false
         type: string
         default: 'pydm'
+      docker_network:
+        description: 'Docker network name for inter-container DNS (container deployments)'
+        required: false
+        type: string
+        default: ''
+      migration_command:
+        description: 'Database migration command (e.g., alembic upgrade head). Skipped if empty.'
+        required: false
+        type: string
+        default: ''
+      health_check_path:
+        description: 'Health check endpoint path (default: /health)'
+        required: false
+        type: string
+        default: '/health'
+    secrets:
+      database_url:
+        required: false
+      redis_url:
+        required: false
 
 permissions:
   deployments: write
@@ -58,16 +88,18 @@ jobs:
           [ "${{ inputs.deploy_to_facet }}" == "true" ] && FACILITIES="${FACILITIES}\"FACET\","
           [ "${{ inputs.deploy_to_testfac }}" == "true" ] && FACILITIES="${FACILITIES}\"TESTFAC\","
           [ "${{ inputs.deploy_to_sandbox }}" == "true" ] && FACILITIES="${FACILITIES}\"SANDBOX\","
-          
+          [ "${{ inputs.deploy_to_container_dev }}" == "true" ] && FACILITIES="${FACILITIES}\"CONTAINER_DEV\","
+          [ "${{ inputs.deploy_to_container_prod }}" == "true" ] && FACILITIES="${FACILITIES}\"CONTAINER_PROD\","
+
           # Remove trailing comma and close array
           FACILITIES="${FACILITIES%,}]"
-          
+
           # Check if empty
           if [ "$FACILITIES" == "[]" ]; then
             echo "Error: No facilities selected"
             exit 1
           fi
-          
+
           echo "facilities=$FACILITIES" >> $GITHUB_OUTPUT
           echo "Selected facilities: $FACILITIES"
 
@@ -77,35 +109,50 @@ jobs:
     strategy:
       matrix:
         facility: ${{ fromJson(needs.prepare.outputs.facilities) }}
-      fail-fast: false  # Continue deploying to other facilities even if one fails
+      fail-fast: false
     steps:
+      - name: Mask secrets
+        run: |
+          echo "::add-mask::${{ secrets.database_url }}"
+          echo "::add-mask::${{ secrets.redis_url }}"
+
       - name: Create GitHub Deployment for ${{ matrix.facility }}
         id: deployment
         uses: actions/github-script@v7
         with:
           script: |
+            const payload = {
+              facility: '${{ matrix.facility }}',
+              tag: '${{ inputs.tag }}',
+              user: '${{ github.actor }}',
+              deploymentType: '${{ inputs.deployment_type }}'
+            };
+
+            const dockerNetwork = '${{ inputs.docker_network }}';
+            if (dockerNetwork) payload.docker_network = dockerNetwork;
+
+            const migrationCmd = '${{ inputs.migration_command }}';
+            if (migrationCmd) payload.migration_command = migrationCmd;
+
+            const healthPath = '${{ inputs.health_check_path }}';
+            if (healthPath) payload.health_check_path = healthPath;
+
+            const dbUrl = '${{ secrets.database_url }}';
+            if (dbUrl) payload.database_url = dbUrl;
+
+            const redisUrl = '${{ secrets.redis_url }}';
+            if (redisUrl) payload.redis_url = redisUrl;
+
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: '${{ inputs.tag }}',
+              ref: context.sha,
               environment: '${{ matrix.facility }}',
               required_contexts: [],
               auto_merge: false,
-              payload: {
-                facility: '${{ matrix.facility }}',
-                tag: '${{ inputs.tag }}',
-                user: '${{ github.actor }}',
-                deploymentType: '${{ inputs.deployment_type }}'
-              },
+              payload: payload,
               description: 'Deploying ${{ inputs.tag }} to ${{ matrix.facility }}'
             });
-            
+
             console.log('Deployment created for ${{ matrix.facility }}: ID', deployment.data.id);
-            console.log('Payload:', JSON.stringify(deployment.data.payload));
             return deployment.data.id;
-      
-      - name: Log Deployment Details
-        run: |
-          echo "Deployment ID: ${{ steps.deployment.outputs.result }}"
-          echo "Tag: ${{ inputs.tag }}"
-          echo "Facility: ${{ matrix.facility }}"
