@@ -1,0 +1,91 @@
+# Artifact Deployment Playbook
+#
+# Deploys a downloadable artifact (RPM, tarball, zip) to target servers.
+# Extracts contents to a versioned directory and updates a symlink to the current version.
+# No sudo required — uses user-writable paths.
+#
+# Usage:
+#   ansible-playbook artifact_module/artifact_deploy.yml \
+#     -i global_inventory.ini -l DEV \
+#     --extra-vars '{
+#       "component_name": "react-squirrel",
+#       "tag": "v1.0.0",
+#       "artifact_path": "/tmp/squirrel-1.0.0.rpm",
+#       "artifact_type": "rpm"
+#     }'
+
+- name: Deploy application artifact
+  hosts: all
+  gather_facts: no
+  tasks:
+    # --- Idempotency check ---
+    - name: 'Check if {{ tag }} is already deployed'
+      ansible.builtin.stat:
+        path: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}/.deployed'
+      register: already_deployed
+
+    - name: 'Skip deployment — {{ tag }} already deployed'
+      ansible.builtin.debug:
+        msg: 'Tag {{ tag }} is already deployed, skipping'
+      when: already_deployed.stat.exists and not (force_deploy | default(false) | bool)
+
+    - block:
+        # --- Prepare release directory ---
+        - name: 'Create release directory {{ app_release_folder }}/{{ component_name }}/{{ tag }}'
+          ansible.builtin.file:
+            path: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}'
+            state: directory
+            mode: '0755'
+
+        # --- Copy artifact to target ---
+        - name: 'Copy artifact to target'
+          ansible.builtin.copy:
+            src: '{{ artifact_path }}'
+            dest: '/tmp/{{ component_name }}-{{ tag }}.artifact'
+            mode: '0644'
+
+        # --- Extract RPM (no sudo) ---
+        - name: 'Extract RPM contents'
+          ansible.builtin.shell: >
+            cd {{ app_release_folder }}/{{ component_name }}/{{ tag }} &&
+            rpm2cpio /tmp/{{ component_name }}-{{ tag }}.artifact | cpio -idmv
+          when: artifact_type | default('rpm') == 'rpm'
+
+        # --- Extract tarball ---
+        - name: 'Extract tarball contents'
+          ansible.builtin.unarchive:
+            src: '/tmp/{{ component_name }}-{{ tag }}.artifact'
+            dest: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}'
+            remote_src: true
+          when: artifact_type | default('rpm') in ['tar', 'tar.gz', 'tgz']
+
+        # --- Extract zip ---
+        - name: 'Extract zip contents'
+          ansible.builtin.unarchive:
+            src: '/tmp/{{ component_name }}-{{ tag }}.artifact'
+            dest: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}'
+            remote_src: true
+          when: artifact_type | default('rpm') == 'zip'
+
+        # --- Update symlink ---
+        - name: 'Update symlink {{ app_link_folder }}/{{ component_name }} → {{ tag }}'
+          ansible.builtin.file:
+            src: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}'
+            dest: '{{ app_link_folder }}/{{ component_name }}'
+            state: link
+            force: true
+
+        # --- Mark as deployed ---
+        - name: 'Mark {{ tag }} as deployed'
+          ansible.builtin.copy:
+            content: '{{ tag }}'
+            dest: '{{ app_release_folder }}/{{ component_name }}/{{ tag }}/.deployed'
+            mode: '0644'
+
+        # --- Clean up temp artifact ---
+        - name: 'Clean up temp artifact'
+          ansible.builtin.file:
+            path: '/tmp/{{ component_name }}-{{ tag }}.artifact'
+            state: absent
+
+      when: not already_deployed.stat.exists or (force_deploy | default(false) | bool)
