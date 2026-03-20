@@ -62,6 +62,16 @@ on:
         required: false
         type: string
         default: '/health'
+      artifact_url:
+        description: 'URL to download artifact (for app deployments)'
+        required: false
+        type: string
+        default: ''
+      artifact_type:
+        description: 'Artifact type: rpm, tar, zip (for app deployments)'
+        required: false
+        type: string
+        default: 'rpm'
     secrets:
       database_url:
         required: false
@@ -142,6 +152,12 @@ jobs:
 
             const redisUrl = '${{ secrets.redis_url }}';
             if (redisUrl) payload.redis_url = redisUrl;
+
+            const artifactUrl = '${{ inputs.artifact_url }}';
+            if (artifactUrl) payload.artifact_url = artifactUrl;
+
+            const artifactType = '${{ inputs.artifact_type }}';
+            if (artifactType) payload.artifact_type = artifactType;
 
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
