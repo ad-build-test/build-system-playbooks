@@ -9,60 +9,14 @@
     component_name: '{{ component_name }}'
     tag: '{{ tag }}'
     user: '{{ user }}'
-    tarball: '{{ tarball }}' # full filepath to build results tarball
+    tarball: '{{ tarball }}'
     subsystem: '{{ subsystem }}' # Name of subsystem like (mps, ntwk, mgnt, etc) How it shows up at $PYDM
 
   tasks:
-  - name: Check if this tag was already deployed
-    ansible.builtin.stat:
-      path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
-    register: tag_deployed
-
-  - block:
-  # This extraction only occurs if extracted tarball doesn't already exist,
-
-      # Each directory creation will have a task to check first if directory already exists, if not then create it
-      # Added a check first because if already exists and the permissions don't match here, then the task will fail.
-      - name: 'Check if component directory exists at {{ pydm_release_folder }}/{{ component_name }}'
-        ansible.builtin.stat:
-          path: '{{ pydm_release_folder }}/{{ component_name }}'
-        register: dir_stat
-
-      - name: 'Create component directory at {{ pydm_release_folder }}/{{ component_name }}'
-        ansible.builtin.file:
-          path: '{{ pydm_release_folder }}/{{ component_name }}'
-          state: directory
-          mode: '775' # drwxrwxr-x
-        when: not dir_stat.stat.exists
-     
-      - name: 'Extract build results to {{ pydm_release_folder }}/{{ component_name }}'
-        ansible.builtin.unarchive:
-          src: '{{ tarball }}'
-          dest: '{{ pydm_release_folder }}/{{ component_name }}'
-          list_files: yes
-        register: extraction_result
-
-      - name: Get the top-level directory name
-        set_fact:
-          extracted_dir_name: "{{ extraction_result.files[0].split('/')[0] }}"
-
-      - name: 'Rename extracted directory to {{ tag }}'
-        ansible.builtin.command:
-          cmd: "mv '{{ pydm_release_folder }}/{{ component_name }}/{{ extracted_dir_name }}' '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'"
-        when: extracted_dir_name != tag
-
-      - name: Mark tag as deployed
-        ansible.builtin.file:
-          path: "{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}/.deployed"
-          state: touch
-          mode: '0644'
-    when: not tag_deployed.stat.exists
-
-  - name: 'Create sym link at $PYDM {{ pydm_link_folder }}/{{ subsystem }} to point to {{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
-    ansible.builtin.file:
-      src: '{{ pydm_release_folder }}/{{ component_name }}/{{ tag }}'
-      dest: '{{ pydm_link_folder }}/{{ subsystem }}'
-      state: link
-      force: true # Force creation even if src dir doesn't exist since it won't if this is initial deployment
+  - include_tasks: ../common/deploy_tasks.yml
+    vars:
+      release_folder: '{{ pydm_release_folder }}'
+      link_folder: '{{ pydm_link_folder }}'
+      link_name: '{{ subsystem }}'
 
 

@@ -1,0 +1,38 @@
+# Shared deployment tasks: extract tarball to release_folder, update symlink to link_folder.
+# Expected vars: release_folder, link_folder, link_name, component_name, tag, tarball
+
+- name: 'Create component directory at {{ release_folder }}/{{ component_name }}'
+  ansible.builtin.file:
+    path: '{{ release_folder }}/{{ component_name }}'
+    state: directory
+    mode: '775'
+
+- name: Check if tag directory already exists
+  ansible.builtin.stat:
+    path: '{{ release_folder }}/{{ component_name }}/{{ tag }}'
+  register: tag_dir
+
+- block:
+    - name: 'Extract build results to {{ release_folder }}/{{ component_name }}'
+      ansible.builtin.unarchive:
+        src: '{{ tarball }}'
+        dest: '{{ release_folder }}/{{ component_name }}'
+        list_files: yes
+      register: extraction_result
+
+    - name: Get the top-level directory name from tarball
+      set_fact:
+        extracted_dir_name: "{{ extraction_result.files[0].split('/')[0] }}"
+
+    - name: 'Rename extracted directory to {{ tag }}'
+      ansible.builtin.command:
+        cmd: "mv '{{ release_folder }}/{{ component_name }}/{{ extracted_dir_name }}' '{{ release_folder }}/{{ component_name }}/{{ tag }}'"
+      when: extracted_dir_name != tag
+  when: not tag_dir.stat.exists
+
+- name: 'Update symlink {{ link_folder }}/{{ link_name }} -> {{ release_folder }}/{{ component_name }}/{{ tag }}'
+  ansible.builtin.file:
+    src: '{{ release_folder }}/{{ component_name }}/{{ tag }}'
+    dest: '{{ link_folder }}/{{ link_name }}'
+    state: link
+    force: true
