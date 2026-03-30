@@ -42,11 +42,10 @@ on:
         description: 'Tag to deploy'
         required: true
         type: string
-      deployment_type:
-        description: 'Deployment type (e.g., pydm, epics-ioc, container)'
-        required: false
+      playbook:
+        description: 'Deployment playbook (e.g., pydm_module/pydm_deploy.yml, epics-ioc_module/epics_ioc_deploy.yml, container_module/container_deploy.yml)'
+        required: true
         type: string
-        default: 'pydm'
       docker_network:
         description: 'Docker network name for inter-container DNS (container deployments)'
         required: false
@@ -135,7 +134,7 @@ jobs:
               facility: '${{ matrix.facility }}',
               tag: '${{ inputs.tag }}',
               user: '${{ github.actor }}',
-              deploymentType: '${{ inputs.deployment_type }}'
+              playbook: '${{ inputs.playbook }}'
             };
 
             const dockerNetwork = '${{ inputs.docker_network }}';
