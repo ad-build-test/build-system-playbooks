@@ -5,7 +5,6 @@
   ansible.builtin.file:
     path: '{{ release_folder }}/{{ component_name }}'
     state: directory
-    mode: '775'
 
 - name: Check if tag directory already exists
   ansible.builtin.stat:
