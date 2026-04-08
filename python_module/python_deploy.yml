@@ -1,0 +1,14 @@
+- hosts: all
+  vars:
+    facility: '{{ facility }}'
+    component_name: '{{ component_name }}'
+    tag: '{{ tag }}'
+    user: '{{ user }}'
+    tarball: '{{ tarball }}'
+
+  tasks:
+  - include_tasks: ../common/deploy_tasks.yml
+    vars:
+      release_folder: '{{ python_release_folder }}'
+      link_folder: '{{ python_link_folder }}'
+      link_name: '{{ component_name }}'
