@@ -158,10 +158,12 @@ jobs:
             const artifactType = '${{ inputs.artifact_type }}';
             if (artifactType) payload.artifact_type = artifactType;
 
+            const deployRef = '${{ inputs.tag }}' || context.sha;
+
             const deployment = await github.rest.repos.createDeployment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: context.sha,
+              ref: deployRef,
               environment: '${{ matrix.facility }}',
               required_contexts: [],
               auto_merge: false,
